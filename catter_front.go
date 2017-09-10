@@ -22,14 +22,41 @@ func printBanner() {
 
 func main() {
 
+	printBanner()
+
 	cgroup.Init()
 
 	cg := cgroup.NewCgroup("bar")
-	cg.AddController("cpu")
-	cg.AddController("memory")
-	cg.Create()
-	cg.AttachTask()
-	// cg.AddController("memory")
+	ccpu := cg.AddController("cpu")
+	if ccpu == nil {
+		fmt.Println("error")
+		return
+	}
+	cmem := cg.AddController("memory")
+	if ccpu == nil {
+		fmt.Println("error")
+		return
+	}
+	err := ccpu.AddValueInt64("cpu.shares", 500)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = cmem.AddValueInt64("memory.limit_in_bytes", 1048576)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = cg.Create()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	err = cg.AttachTask()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	ctls, err := cgroup.GetAllControllers()
 	if err != nil {
@@ -40,13 +67,18 @@ func main() {
 		fmt.Println(ctls[i])
 	}
 
+	if err = syscall.Unshare(syscall.CLONE_NEWPID); err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	err = syscall.Chroot("./rootfs")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	cmd := exec.Command("/bin/bash")
+	cmd := exec.Command("/bin/bash", "-c", "/catter_impl")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -55,11 +87,10 @@ func main() {
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 
-	err = cmd.Run()
+	err = cmd.Start()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	printBanner()
+	cmd.Wait()
 }
