@@ -1,0 +1,1 @@
+go build catter_front.go && go build catter_impl.go && sudo ./catter_front
