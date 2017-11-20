@@ -8,8 +8,13 @@ import (
 )
 
 func main() {
+	err := syscall.Chroot("./rootfs")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	if err := os.MkdirAll("/proc", 0770); err != nil {
+	if err = os.MkdirAll("/proc", 0770); err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -38,7 +43,7 @@ func main() {
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
 		fmt.Println(err)
 		return
